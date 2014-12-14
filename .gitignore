@@ -1,0 +1,32 @@
+# ---- General ----------------------------------------------------------------
+
+.bundle
+.sass-cache
+.npm-debug.log
+node_modules
+
+# ---- Operating System -------------------------------------------------------
+
+.DS_Store
+Thumbs.db
+*.vi
+*~
+*.log
+
+# ---- Editors ----------------------------------------------------------------
+
+# sublime text
+*.sublime-workspace
+*.sublime-project
+
+# eclipse
+.settings/
+.project
+.buildpath
+
+# komodo
+*.komodoproject
+.komodotools
+
+# phpstorm
+.idea

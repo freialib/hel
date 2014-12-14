@@ -1,0 +1,34 @@
+{
+  "name": "hel",
+  "version": "1.0.0",
+  "description": "Common patterns abstraction library.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/freialib/hel"
+  },
+  "keywords": [
+    "gulp",
+    "task"
+  ],
+  "author": "srcspider <source.spider@gmail.com>",
+  "license": "BSD-2",
+  "bugs": {
+    "url": "https://github.com/freialib/hel/issues"
+  },
+  "homepage": "https://github.com/freialib/hel",
+  "dependencies": {
+    "browserify": "^7.0.0",
+    "del": "^1.1.0",
+    "exorcist": "^0.1.6",
+    "gulp-notify": "^2.1.0",
+    "lodash": "^2.4.1",
+    "uglify-js": "^2.4.16",
+    "vinyl-source-stream": "^1.0.0",
+    "vinyl-transform": "^1.0.0",
+    "watchify": "^2.2.1"
+  }
+}

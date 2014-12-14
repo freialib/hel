@@ -1,0 +1,119 @@
+# DO NOT ADD THE FOLLOWING
+#
+# 	* text=auto
+#
+# This is just here as a warning. The rule above will convert everything to
+# CRLF which is NOT the correct line ending for files and is just done for
+# pointless backwards compatibility we do not care for.
+
+#
+# Every text file should be LF.
+# Any LF will be replaced by CRLF is an error! Add a rule here to correct it.
+#
+# If you see CRLF or CR will be replaced by LF that's fine but you should just
+# covert the file on your end too since that's an error. If a commit needs to
+# be made to correct them please add them as a seperate commit to any other
+# changes; that way your actual logic changes are clear in diffs, merges, etc.
+#
+# To fix issues you can either change the line endings in your favorite editor
+# or use the dos2unix utility which is also available for windows.
+#
+
+# Explicit
+# ------------------------
+
+app/console    text eol=lf
+
+# General Web
+# ------------------------
+
+*.sh           text eol=lf
+*.md           text eol=lf
+*.txt          text eol=lf
+*.patch        text eol=lf
+
+*.html         text eol=lf
+*.htm          text eol=lf
+*.css          text eol=lf
+*.scss         text eol=lf
+*.php          text eol=lf
+*.rb           text eol=lf
+*.js           text eol=lf
+*.jsx          text eol=lf
+
+*.yml          text eol=lf
+*.ini          text eol=lf
+*.json         text eol=lf
+*.xml          text eol=lf
+
+*.svg          text eol=lf
+*.webm         binary
+*.jpg          binary
+*.jpeg         binary
+*.png          binary
+*.gif          binary
+*.bmp          binary
+*.ico          binary
+*.tiff         binary
+
+*.swf          binary
+*.avi          binary
+*.mp3          binary
+*.mp4          binary
+*.flv          binary
+*.mpeg         binary
+*.mov          binary
+
+*.bz2          binary
+*.zip          binary
+*.7z           binary
+*.tgz          binary
+*.tar.gz       binary
+
+.htaccess      text eol=lf
+.keeper        text eol=lf
+
+README         text eol=lf
+LICENSE        text eol=lf
+
+# Extra
+# ------------------------
+
+*.markdown     text eol=lf
+
+*.bash         text eol=lf
+*.bat          text eol=lf
+
+*.dart         text eol=lf
+*.coffee       text eol=lf
+*.less         text eol=lf
+*.sass         text eol=lf
+
+*.h            text eol=lf
+*.c            text eol=lf
+*.cc           text eol=lf
+*.cpp          text eol=lf
+*.o            binary
+
+*.asp          text eol=lf
+*.aspx         text eol=lf
+*.asx          text eol=lf
+
+*.erb          text eol=lf
+*.erl          text eol=lf
+*.pl           text eol=lf
+
+*.java         text eol=lf
+*.jsp          text eol=lf
+*.jar          binary
+*.war          binary
+
+# Etc
+# ------------------------
+
+.gitignore     text eol=lf
+.gitattributes text eol=lf
+.editorconfig  text eol=lf
+
+Gemfile        text eol=lf
+Gemfile.lock   text eol=lf
