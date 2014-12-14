@@ -245,7 +245,7 @@ var Task = function (conf) {
 			var b = bundler.bundle()
 			b.on('error', errorNotice);
 			return b.pipe(source(dest.name))
-				// .pipe(extractmap)
+				.pipe(extractmap)
 				.pipe(gulp.dest(dest.path))
 				.on('end', minify);
 		};
