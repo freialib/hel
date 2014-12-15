@@ -90,8 +90,8 @@ hel.tasks.mainjs({
     dest : './public/web/main.js',               // consumer file
 });
 
-// Main Tasks
-// ----------
+// Control Tasks
+// -------------
 
 gulp.task('build', [
     'build:libraryjs',
@@ -117,7 +117,6 @@ Like above with the difference that,
 - transforms are applied to the bundle pipeline; in our example ES6 features
   and JSX syntax (ie. React syntax) are enabled, but you can add whatever
   transforms suit your needs
-
 
 
 ```sh
@@ -159,8 +158,8 @@ hel.tasks.mainjs({
 
 });
 
-// Main Tasks
-// ----------
+// Control Tasks
+// -------------
 
 gulp.task('build', [
     'build:libraryjs',
@@ -210,8 +209,8 @@ hel.tasks.mainjs({
 
 });
 
-// Main Tasks
-// ----------
+// Control Tasks
+// -------------
 
 gulp.task('build', [
 	'build:libraryjs',
@@ -243,6 +242,8 @@ if you need to test on browsers like IE8 you'll need to use the production
 version.*
 
 #### Advance Usage Example
+
+Almost everything you can customize.
 
 ```sh
 mkdir -p src/client/node_modules
@@ -377,8 +378,8 @@ hel.tasks.mainjs({
 
 });
 
-// Main Tasks
-// ----------
+// Control Tasks
+// -------------
 
 gulp.task('build', [
 	'build:libraryjs',
