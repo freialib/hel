@@ -126,7 +126,7 @@ var defaults = {
 	}
 };
 
-var Task = function (conf) {
+var Recipe = function (conf) {
 
 	conf = _.merge({}, defaults, conf)
 
@@ -334,4 +334,4 @@ var Task = function (conf) {
 
 };
 
-module.exports = Task;
+module.exports = Recipe;
