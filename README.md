@@ -47,6 +47,21 @@ in our examples) for all your scripts and just wish to compile from a source
 some transforms along the way and potentially building libraries to a seperate
 file to your main source tree.
 
+***Forking The Task***
+
+You can find the source for this task pattern in `node_modules/hel/gulp/mainjs.js`.
+
+If you need something just a bit more complicated then what we provide feel
+free to use it as a boilerplate. We recomend placing complicated tasks such as
+this in a specialized `tasks/` directory rather then having a
+monolithic `gulpfile.js`.
+
+```sh
+mkdir tasks
+cp node_modules/hel/gulp/mainjs.js tasks/mainjs.js
+```
+
+
 #### Simple Usage Example
 
 Everything from the source `main.js` and it's dependency graph goes into the
@@ -127,8 +142,6 @@ var es6ify   = require('es6ify');
 
 hel.tasks.mainjs({
 
-    srcmaps: true,
-
     main : './src/client/node_modules/main.js',  // entry point
     dest : './public/web/main.js',               // consumer file
     libs : './public/web/library.js',            // 3rd-party bundle
@@ -183,8 +196,6 @@ var pkg = JSON.parse(fs.readFileSync('./package.json'));
 
 hel.tasks.mainjs({
 
-	srcmaps: true,
-
 	main : './src/client/node_modules/main.js',  // entry point
 	dest : './public/web/main.js',               // consumer file
 	libs : './public/web/library.js',            // 3rd-party bundle
@@ -212,7 +223,24 @@ gulp.task('default', [ 'build' ], function () {
 });
 
 ```
+Given the above, to create production code,
+```sh
+gulp build
+```
+When doing development code (source maps, etc),
+```sh
+NODE_ENV=development gulp build
+```
 
+Or, to avoid setting `NODE_ENV` every run,
+```sh
+export NODE_ENV=development
+gulp build
+```
+
+*Due to current limitations polyfills won't be applied to development code. So
+if you need to test on browsers like IE8 you'll need to use the production
+version.*
 
 #### Advance Usage Example
 
@@ -238,14 +266,16 @@ edit gulpfile.js
 ```js
 var gulp = require('gulp');
 var hel  = require('hel/gulp');
+var fs   = require('fs');
+var _    = require('lodash');
 // ----------------------------------------------------------------------------
+
+var pkg = JSON.parse(fs.readFileSync('./package.json'));
 
 var reactify = require('reactify');
 var es6ify   = require('es6ify');
 
 hel.tasks.mainjs({
-
-	srcmaps: true,
 
 	main : './src/client/node_modules/main.js',  // entry point
 	dest : './public/web/main.js',               // consumer file
@@ -266,10 +296,16 @@ hel.tasks.mainjs({
 	// If you don't specify any libraries the library task will still be
 	// created but will do nothing.
 
-	require: [
-    	'lodash',
-		'react'
-	],
+	require: _.merge(Object.keys(pkg.dependencies), {
+		'react/addons' // required for require('react/addons')
+	}),
+
+	// Autopolyfiller
+	// --------------
+
+	polyfills: {
+		// empty
+	},
 
 	// Transforms (Optional)
 	// ---------------------
@@ -283,11 +319,14 @@ hel.tasks.mainjs({
 	// Optimization
 	// ------------
 
-	// These options will be passed to uglifyjs [output] parameter.
+	// These options will be passed to uglifyjs
+	// See: http://lisperator.net/uglifyjs/codegen
 	// See: http://lisperator.net/uglifyjs/compress
 
-	optimization: {
-		// empty
+	uglify: {
+		mangle: true,
+		output: {},
+		compress: {}
 	},
 
 	// Names For Tasks (Optional)
@@ -309,6 +348,7 @@ hel.tasks.mainjs({
 	// Simply install the version you want to use and specify it here.
 
 	use: {
+		'gulp-autopolyfiller': require('gulp-autopolyfiller'),
 		'vinyl-source-stream': require('vinyl-source-stream'),
         'vinyl-transform': require('vinyl-transform'),
 		'browserify': require('browserify'),
@@ -331,15 +371,4 @@ gulp.task('default', [ 'build' ], function () {
 	gulp.watch('src/**/*.js', [ 'watch:mainjs' ]);
 });
 
-```
-#### Forking The Task
-
-You can find the source for this task pattern in `hel/gulp/mainjs.js`. If you
-need something just a bit more complicated then what we provide feel free to
-use it as a boilerplate. We recomend placing complicated tasks such as this in
-a specialized `tasks/` directory rather then having a monolithic `gulpfile.js`.
-
-```sh
-mkdir tasks
-cp node_modules/hel/gulp/mainjs.js tasks/mainjs.js
 ```

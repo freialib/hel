@@ -4,6 +4,11 @@ var fs = require('fs');
 var _ = require('lodash');
 // ----------------------------------------------------------------------------
 
+var buffer  = require('vinyl-buffer')
+var concat  = require('gulp-concat');
+var order   = require('gulp-order');
+var merge   = require('event-stream').merge;
+
 var errorNotice = require('hel/lib/errorNotice');
 var pathSplit = require('hel/lib/pathSplit');
 
@@ -11,7 +16,7 @@ var pathSplit = require('hel/lib/pathSplit');
 
 var defaults = {
 
-	srcmaps: false,
+	env: process.env.NODE_ENV != null ? process.env.NODE_ENV : 'production',
 
 	main : './src/client/node_modules/main.js',  // entry point
 	dest : './public/web/main.js',               // consumer file
@@ -43,14 +48,24 @@ var defaults = {
 		// empty
 	},
 
+	// Autopolyfiller
+	// --------------
+
+	polyfills: {
+		// empty
+	},
+
 	// Optimization
 	// ------------
 
-	// These options will be passed to uglifyjs [output] parameter.
+	// These options will be passed to uglifyjs
+	// See: http://lisperator.net/uglifyjs/codegen
 	// See: http://lisperator.net/uglifyjs/compress
 
-	optimization: {
-		// empty
+	uglify: {
+		mangle: true,
+		output: {},
+		compress: {}
 	},
 
 	// Names For Tasks (Optional)
@@ -72,6 +87,7 @@ var defaults = {
 	// Simply install the version you want to use and specify it here.
 
 	use: {
+		'gulp-autopolyfiller': null,
 		'vinyl-source-stream': null,
 		'vinyl-transform': null,
 		'browserify': null,
@@ -85,12 +101,16 @@ var Task = function (conf) {
 
 	conf = _.merge({}, defaults, conf)
 
+	var t = new Date();
+	console.log('['+t.getHours()+':'+t.getMinutes()+':'+t.getSeconds()+'] hel.mainjs --', conf.env, 'settings');
+
 	var source     = require('vinyl-source-stream');
 	var transform  = require('vinyl-transform');
 	var browserify = require('browserify');
 	var watchify   = require('watchify');
 	var uglifyjs   = require('uglify-js');
 	var exorcist   = require('exorcist');
+	var polyfill   = require('gulp-autopolyfiller');
 
 	// Dependency Injection
 	// --------------------
@@ -120,6 +140,10 @@ var Task = function (conf) {
 		if (conf.use['exorcist']) {
 			exorcist = conf.use['exorcist'];
 		}
+
+		if (conf.use['gulp-autopolyfiller']) {
+			polyfill = conf.use['gulp-autopolyfiller'];
+		}
 	}
 
 	//
@@ -134,11 +158,57 @@ var Task = function (conf) {
 	// to look into http://webpack.github.io/
 	//
 
+	var makebundle = function (bundler, filepath) {
+		var dest = pathSplit(filepath);
+
+		return function () {
+
+			// [!!] the combination of source map + polyfills + uglify is not
+			// working ideally; current implementation is temporarily crippled
+			// to do only one or the other.
+
+			var extractmap = transform(function () {
+				return exorcist(filepath + '.map');
+			});
+
+			var minify = function () {
+				var args = _.merge({}, conf.uglify);
+				var min = uglifyjs.minify(filepath, args);
+				fs.writeFileSync(filepath, min.code);
+			};
+
+			var b = bundler.bundle()
+			b.on('error', errorNotice);
+
+			var channel = b.pipe(source(dest.name))
+				.pipe(extractmap)
+				.pipe(buffer())
+				.pipe(concat(dest.name));
+
+			if (conf.env == 'production') {
+				var polyfills = channel
+					.pipe(polyfill('polyfills.js', conf.polyfills));
+
+				merge(polyfills, channel)
+					.pipe(order(['polyfills.js', dest.name]))
+					.pipe(buffer())
+					.pipe(concat(dest.name))
+					.pipe(gulp.dest(dest.path))
+					.on('end', minify);
+			}
+			else { // development
+				channel = channel.pipe(gulp.dest(dest.path))
+			}
+
+			return channel;
+		};
+	};
+
 	var mainjs = function (opts) {
 
 		var args = {
 			entries: [ conf.main ],
-			debug: conf.srcmaps
+			debug: conf.env == 'development'
 		};
 
 		if (opts.watcher) {
@@ -164,40 +234,7 @@ var Task = function (conf) {
 		// Bundling Logic
 		// --------------
 
-		var filepath = conf.dest;
-		var dest = pathSplit(filepath);
-
-		var bundle = function () {
-
-			// [!!] the combination of source map + uglify is not working
-			// entirely as expected; current implementation here is temporarily
-			// crippled to do only one or the other. Hopefully find a solution
-
-			var extractmap = transform(function () {
-				return exorcist(filepath + '.map');
-			});
-
-			var minify = function () {
-				var min = uglifyjs.minify(filepath, {
-					output: conf.optimization
-				});
-
-				fs.writeFileSync(filepath, min.code);
-			};
-
-			var b = bundler.bundle()
-			b.on('error', errorNotice);
-
-			var pipe = b.pipe(source(dest.name))
-				.pipe(extractmap)
-				.pipe(gulp.dest(dest.path));
-
-			if ( ! conf.srcmaps) {
-				pipe = pipe.on('end', minify);
-			}
-
-			return pipe;
-		};
+		var bundle = makebundle(bundler, conf.dest);
 
 		if (opts.watcher) {
 			bundler = watchify(bundler);
@@ -209,7 +246,7 @@ var Task = function (conf) {
 
 	var libraryjs = function (opts) {
 
-		var bundler = browserify({ debug: conf.srcmaps });
+		var bundler = browserify({ debug: conf.env == 'development' });
 
 		// Library Exports
 		// ---------------
@@ -221,34 +258,7 @@ var Task = function (conf) {
 		// Bundling Logic
 		// --------------
 
-		var filepath = conf.libs;
-		var dest = pathSplit(filepath);
-
-		var bundle = function () {
-
-			// [!!] the combination of source map + uglify is not working
-			// entirely as expected; current implementation here is temporarily
-			// crippled to do only one or the other. Hopefully find a solution
-
-			var extractmap = transform(function () {
-				return exorcist(filepath + '.map')
-			});
-
-			var minify = function () {
-				var min = uglifyjs.minify(filepath, {
-					output: conf.optimization
-				});
-
-				fs.writeFileSync(filepath, min.code);
-			};
-
-			var b = bundler.bundle()
-			b.on('error', errorNotice);
-			return b.pipe(source(dest.name))
-				.pipe(extractmap)
-				.pipe(gulp.dest(dest.path))
-				.on('end', minify);
-		};
+		var bundle = makebundle(bundler, conf.libs);
 
 		return bundle();
 	};
@@ -281,7 +291,10 @@ var Task = function (conf) {
 
 	gulp.task(conf.tasknames.watch_main, function () {
 		return mainjs({
-			watcher: true,
+			// [!!] disabling watchify builds until index.js purging bug is
+			// fixed; the browserify re-builds are actually reasonably fast
+			// so long as libraries aren't recompiled
+			watcher: false, // true,
 			libs: false
 		});
 	});
