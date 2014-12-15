@@ -355,6 +355,24 @@ hel.tasks.mainjs({
 		'watchify': require('watchify'),
 		'uglify-js': require('uglify-js'),
         'exorcist': require('exorcist')
+	},
+
+	// Feature Switches
+	// ----------------
+
+	// Use these switches to enable features that are supported but disabled
+	// due to bugs or inconsistent behavior; if you find a fork/patched version
+	// of a dependency that will work for you stick it in [use] and enable it.
+
+	// If a fork/patched version of another dependency causes conflicts you can
+	// selectively disable certain features to avoid inter-tool compatibility,
+	// if one cog in the process is more important then the other
+
+	features: {
+
+		// always use browserify directly
+		watchify: false,
+
 	}
 
 });

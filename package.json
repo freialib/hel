@@ -1,6 +1,6 @@
 {
   "name": "hel",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Common patterns abstraction library.",
   "main": "index.js",
   "scripts": {

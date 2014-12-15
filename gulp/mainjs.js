@@ -94,6 +94,35 @@ var defaults = {
 		'watchify': null,
 		'uglify-js': null,
 		'exorcist': null
+	},
+
+	// Feature Switches
+	// ----------------
+
+	// Use these switches to enable features that are supported but disabled
+	// due to bugs or inconsistent behavior; if you find a fork/patched version
+	// of a dependency that will work for you stick it in [use] and enable it.
+
+	// If a fork/patched version of another dependency causes conflicts you can
+	// selectively disable certain features to avoid inter-tool compatibility.
+
+	features: {
+
+		// current versions problematic with "directory/index.js" resolution;
+		// will be re-enabled once fixed by project maintainers
+		watchify: false,
+
+		// switch for uglify
+		uglifyjs: true,
+
+		// switch for autopolyfiller
+		polyfill: true,
+
+		// switch for source maps; note that source map generation depends
+		// a variaty of factors not just this switch; but if this switch is OFF
+		// it will never get generated
+		srcmaps: true,
+
 	}
 };
 
@@ -172,9 +201,11 @@ var Task = function (conf) {
 			});
 
 			var minify = function () {
-				var args = _.merge({}, conf.uglify);
-				var min = uglifyjs.minify(filepath, args);
-				fs.writeFileSync(filepath, min.code);
+				if (conf.features.uglifyjs) {
+					var args = _.merge({}, conf.uglify);
+					var min = uglifyjs.minify(filepath, args);
+					fs.writeFileSync(filepath, min.code);
+				}
 			};
 
 			var b = bundler.bundle()
@@ -186,15 +217,20 @@ var Task = function (conf) {
 				.pipe(concat(dest.name));
 
 			if (conf.env == 'production') {
-				var polyfills = channel
-					.pipe(polyfill('polyfills.js', conf.polyfills));
+				if (conf.features.polyfill) {
+					var polyfills = channel
+						.pipe(polyfill('polyfills.js', conf.polyfills));
 
-				merge(polyfills, channel)
-					.pipe(order(['polyfills.js', dest.name]))
-					.pipe(buffer())
-					.pipe(concat(dest.name))
-					.pipe(gulp.dest(dest.path))
-					.on('end', minify);
+					merge(polyfills, channel)
+						.pipe(order(['polyfills.js', dest.name]))
+						.pipe(buffer())
+						.pipe(concat(dest.name))
+						.pipe(gulp.dest(dest.path))
+						.on('end', minify);
+				}
+				else { // no polyfilling
+					channel.pipe(gulp.dest(dest.path)).on('end', minify)
+				}
 			}
 			else { // development
 				channel = channel.pipe(gulp.dest(dest.path))
@@ -208,7 +244,7 @@ var Task = function (conf) {
 
 		var args = {
 			entries: [ conf.main ],
-			debug: conf.env == 'development'
+			debug: conf.env == 'development' && conf.features.srcmaps
 		};
 
 		if (opts.watcher) {
@@ -291,10 +327,7 @@ var Task = function (conf) {
 
 	gulp.task(conf.tasknames.watch_main, function () {
 		return mainjs({
-			// [!!] disabling watchify builds until index.js purging bug is
-			// fixed; the browserify re-builds are actually reasonably fast
-			// so long as libraries aren't recompiled
-			watcher: false, // true,
+			watcher: conf.features.watchify,
 			libs: false
 		});
 	});
