@@ -1,4 +1,5 @@
 var gulp = require('gulp');
+var log = require('gulp-util/lib/log');
 var del = require('del');
 var fs = require('fs');
 var _ = require('lodash');
@@ -123,6 +124,9 @@ var defaults = {
 		// it will never get generated
 		srcmaps: true,
 
+		// force deletion; enable to allow deletion outside of cwd
+		forcedel: false
+
 	}
 };
 
@@ -130,8 +134,7 @@ var Recipe = function (conf) {
 
 	conf = _.merge({}, defaults, conf)
 
-	var t = new Date();
-	console.log('['+t.getHours()+':'+t.getMinutes()+':'+t.getSeconds()+'] hel.mainjs --', conf.env, 'settings');
+	log('Defining hel.mainjs --', conf.env, ':', conf.main);
 
 	var source     = require('vinyl-source-stream');
 	var transform  = require('vinyl-transform');
@@ -305,7 +308,7 @@ var Recipe = function (conf) {
 	var tasks = conf.tasknames;
 
 	gulp.task(tasks.clean_libs, function (cb) {
-		del([ conf.libs, conf.libs + '.map' ], cb);
+		del([ conf.libs, conf.libs + '.map' ], { force: conf.features.forcedel }, cb);
 	});
 
 	gulp.task(tasks.build_libs, [ tasks.clean_libs ], function () {
@@ -315,7 +318,7 @@ var Recipe = function (conf) {
 	});
 
 	gulp.task(tasks.clean_main, function (cb) {
-		del([ conf.dest, conf.dest + '.map' ], cb);
+		del([ conf.dest, conf.dest + '.map' ], { force: conf.features.forcedel }, cb);
 	});
 
 	gulp.task(tasks.build_main, [ tasks.clean_main ], function () {
