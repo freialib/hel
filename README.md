@@ -415,7 +415,7 @@ var conf = {
 	},
 	output: {
 		path: 'public/web',  // where to place files
-		publicPath: '/web/' // url prefix when loading
+		publicPath: '/web/'  // url prefix when loading
 	}
 };
 
