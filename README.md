@@ -11,6 +11,8 @@ npm install hel
 For `package.json` projects install with `npm i -D hel` and uninstall
 with `npm rm -D hel`
 
+**Looking for Webpack helpers?** Scroll all the way to the bottom.
+
 ## Gulp Task Patterns
 
 Tools like `gulp` are simple. Streams transforms are (usually) simple. But the
@@ -391,3 +393,69 @@ gulp.task('default', [ 'build' ], function () {
 });
 
 ```
+
+#### Webpack Example
+
+Webpack configuration can have a lot of pointless repetitive boilerplate.
+
+The following helper functions will help you configure the boilerplate with
+minimal effort. Note that the tasks are very slightly biased towards `gulp`
+
+```js
+var gulp = require('gulp');
+// ----------------------------------------------------------------------------
+
+var hel = {
+	webpack : require('hel/webpack')
+};
+
+var conf = {
+	entry: {
+		home: './src/client/node_modules/main.home.jsx',
+	},
+	output: {
+		path: 'public/web',  // where to place files
+		publicPath: '/web/' // url prefix when loading
+	}
+};
+
+// boilerplate
+hel.webpack.configure(conf);
+hel.webpack.reactify(conf);
+
+// Tasks
+// =====
+
+gulp.task('js', function (resolve) {
+	hel.webpack.build(conf, resolve);
+});
+
+gulp.task('watch:js', function (resolve) {
+	hel.webpack.watch(conf, resolve);
+});
+
+gulp.task('list:js', function (resolve) {
+	hel.webpack.list(conf, resolve, {
+		'/src/client/node_modules/': ''
+	});
+});
+```
+
+`build` and `watch` do exactly what you would think. If you execute in a
+development environment (ie. `NODE_ENV=development gulp`) optimizations will
+happen so you get the fastest re-compilation possible.
+
+`list` requires you to first build in production so as to generate source maps.
+Once you have them it will analyse them and tell you what each module uses,
+with your modules split from your 3rd party modules. It helps when you try hard
+to optimize your build with `require.ensure` but still get some pesky module to
+slip in due to some typo or dumb piece of code. `list` simply makes it obvious.
+
+If you're interested in more analysis you may wish to check out,
+http://webpack.github.io/analyse/ and
+https://www.npmjs.com/package/stats-webpack-plugin
+
+*Note: Webpack's watch has a tendancy to just not want to watch. This is
+usually a one time thing and you may not get it at all, but if you get it then
+either try closing terminals or a full restart. The cause is unknown and it
+only happens very very rarely.*

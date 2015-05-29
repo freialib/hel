@@ -15,7 +15,7 @@
     "task"
   ],
   "author": "srcspider <source.spider@gmail.com>",
-  "license": "BSD-2",
+  "license": "BSD-2-Clause",
   "bugs": {
     "url": "https://github.com/freialib/hel/issues"
   },
@@ -29,12 +29,16 @@
     "gulp-concat": "^2.4.2",
     "gulp-notify": "^2.1.0",
     "gulp-order": "^1.1.1",
+    "gulp-sourcemaps": "^1.5.2",
     "gulp-util": "^3.0.2",
+    "lie": "^2.9.1",
     "lodash": "^2.4.1",
+    "node-libs-browser": "^0.5.2",
     "uglify-js": "^2.4.16",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^1.0.0",
     "vinyl-transform": "^1.0.0",
-    "watchify": "^2.2.1"
+    "watchify": "^2.2.1",
+    "webpack": "^1.9.10"
   }
 }
