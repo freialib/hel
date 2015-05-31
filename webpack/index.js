@@ -175,8 +175,8 @@ module.exports = {
 			conf.resolve = {};
 		}
 
-		if (conf.resolve.extentions == null) {
-			conf.resolve.extentions = [ '', '.js' ];
+		if (conf.resolve.extensions == null) {
+			conf.resolve.extensions = [ '', '.js' ];
 		}
 
 		if (conf.output == null) {
@@ -251,7 +251,7 @@ module.exports = {
 			loader: 'jsx-loader'
 		});
 
-		conf.resolve.extentions.push('.jsx');
+		conf.resolve.extensions.push('.jsx');
 	},
 
 	build: function (conf, resolve) {
