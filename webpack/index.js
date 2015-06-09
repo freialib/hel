@@ -193,7 +193,7 @@ module.exports = {
 		}
 
 		if (conf.output.chunkFilename == null) {
-			conf.output.chunkFilename = 'pagejs.[id].js';
+			conf.output.chunkFilename = 'pagejs.[id].[chunkhash].js';
 		}
 
 		if (conf.output.sourceMapFilename == null) {
