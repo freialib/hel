@@ -213,7 +213,10 @@ module.exports = {
 			loader: 'json-loader'
 		});
 
-		conf.plugins.push(new plugin.Dedupe);
+		// Dedupe is disabled due to causing apply bug in dynamic contexts
+		// feel free to add to your project if it doesn't cause issues
+
+//		conf.plugins.push(new plugin.Dedupe);
 
 		if (env == 'production') {
 			conf.devtool = 'source-map';
