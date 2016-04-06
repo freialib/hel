@@ -1,272 +1,120 @@
+var webpack  = require('webpack');
+// ----------------------------------------------------------------------------
+
 var env = process.env.NODE_ENV != null ? process.env.NODE_ENV : 'production';
 
-var Contract = require('lie');
-var webpack  = require('webpack');
-var gutil    = require('gulp-util');
-var glob     = require('glob');
-var fs       = require('fs');
+var logger = require('./lib/logger');
+var listMap = require('./lib/listMap');
+var l = require('lodash');
 
-var _ = require('lodash');
+// ============================================================================
 
 var plugin = {
 	Define   : webpack.DefinePlugin,
 	UglifyJs : webpack.optimize.UglifyJsPlugin,
-	Dedupe   : webpack.optimize.DedupePlugin
+	Dedupe   : webpack.optimize.DedupePlugin,
+	Commons  : webpack.optimize.CommonsChunkPlugin
 };
 
-var replaceInFile = function (file, toReplace) {
-	return new Contract(function (resolve, reject) {
-		fs.readFile(file, 'utf8', function (err, data, cb) {
+var WebpackHelInstance = function (conf) {
 
-			if (err) {
-				gutil.log(err);
-				reject();
-				return;
-			}
+	this.conf = l.merge({
 
-			_.each(toReplace, function (logic) {
-				data = data.replace(logic[0], logic[1]);
-			});
+		context: process.cwd(),
 
-			fs.writeFile(file, data, 'utf8', function (err) {
-				if (err) {
-					gutil.log(err);
-					reject();
-				}
-				else { // no errors
-					resolve();
-				}
-			});
-		});
-	});
-};
+		entry: {
+			// empty
+		},
 
-var debugWebpackMapFile = function (file, cleanupRules) {
-	return new Contract(function (resolve, reject) {
-		var match = /\/([^\/]+).js.map$/.exec(file);
-		if (match != null) {
-			var filename = match[1];
-			console.log("\n  " + filename + "\n  =======================\n");
-			var mapjson = JSON.parse(fs.readFileSync(file));
+		output: {
+			filename: '[name].js',
+			path: 'public/web',  // where to place files
+			publicPath: '/web/', // url prefix when loading
+			chunkFilename: 'pagejs.[id].[chunkhash].js',
+			sourceMapFilename: '[file].map',
+			devtoolModuleFilenameTemplate: 'webpack://source.maps/[resource-path]',
+			devtoolFallbackModuleFilenameTemplate: 'webpack://source.maps/[resource-path]?[hash]'
+		},
 
-			var dependencies = [];
-			var sourcefiles = [];
+		resolve: {
+			extensions: [ '', '.js', '.jsx' ]
+		},
 
-			_.each(mapjson.sources, function (srcfile) {
-				srcfile = srcfile.replace('webpack://source.maps', '', srcfile);
-				var match = /^\/node_modules\/([^\/]+)/.exec(srcfile);
-				if (match == null) {
-					match = /^(\/src\/.*\.js)(\?.*)?/.exec(srcfile);
-					if (match != null) {
-						// project source file
-						srcfile = match[1];
-						_.each(cleanupRules, function (to, from) {
-							srcfile = srcfile.replace(from, to);
-						});
-
-						// the sources are in random order in the map file,
-						// so we'll need to sort before displaying anything
-						sourcefiles.push(srcfile);
+		module: {
+			loaders: [
+				{
+					loader: 'babel-loader',
+					test: /\.jsx?$/,
+					query: {
+						presets: [ 'es2015', 'react' ]
 					}
+				},
+				{
+					loader: 'json-loader',
+					test: /\.json$/
 				}
-				else {
-					// dependency
-					var pkg = match[1];
-					if (dependencies.indexOf(pkg) == -1) {
-						dependencies.push(pkg);
-					}
+			]
+		},
+
+		plugins: [
+			
+		]
+
+	}, conf);
+
+	this.conf.plugins.push(new plugin.Commons('libs.js', l.keys(conf.entry)))
+
+	if (env == 'production') {
+		this.conf.devtool = 'source-map';
+
+		this.conf.plugins.push (
+			new plugin.Define({
+				'process.env': {
+					NODE_ENV: '"production"'
 				}
-			});
+			})
+		);
 
-			sourcefiles.sort();
-			_.each(sourcefiles, function (srcfile) {
-				console.log("  " + srcfile);
-			});
-
-			if (dependencies.length > 0) {
-
-				console.log("\n  ---- 3rd Party ------------------\n");
-
-				dependencies.sort();
-				_.each(dependencies, function (pkg) {
-					console.log("  " + pkg);
-				});
-			}
-		}
-
-		console.log("\n\n");
-
-		resolve();
-	}).then(null, console.log.bind(console));
-}
-
-var listmap = function (conf, resolve, cleanupRules) {
-	var promises = [];
-	glob(conf.output.path + '/*.map', {}, function (er, files) {
-		_.each(files, function (file) {
-			promises.push(debugWebpackMapFile(file, cleanupRules));
-		});
-	});
-
-	Promise.all(promises)
-		.then(function () {
-			resolve()
-		}, console.log.bind(console));
-};
-
-var normalizeMaps = function (conf, resolve) {
-	glob(conf.output.path + '/*.map', {}, function (er, files) {
-		var Contracts = [];
-		_.each(files, function (file) {
-			Contracts.push(replaceInFile(file, [
-				[ /\/~/g, '/node_modules' ],
-				[ /\.\//g, ''],
-				[ /source-code\/\(webpack\)/g, 'source.maps/webpack/internal' ]
-			]));
-		});
-
-		Contract.all(Contracts)
-			.then(function () {
-				resolve()
-			}, console.log.bind(console));
-	});
-};
-
-var logger = function (conf, resolve) {
-	return function (err, stats) {
-		if (err) throw new gutil.PluginError('webpack', err);
-
-		gutil.log('[webpack]', stats.toString({
-			chunks: false, // prints every single file built
-			colors: true
-		}));
-
-		var sourceMapsEnabled = /source-map/;
-		if (conf.devtool != null && sourceMapsEnabled.test(conf.devtool)) {
-			normalizeMaps(conf, resolve);
-		}
-		else { // development source maps
-			resolve();
-		}
+		this.conf.plugins.push (
+			new plugin.UglifyJs({
+				sourceMap: true,
+				mangle: true,
+				compress: {
+					warnings: false
+				},
+				output: {
+					comments: false
+				}
+			})
+		);
+	}
+	else { // assume development
+		this.conf.devtool = 'eval';
+		this.conf.output.pathinfo = true;
 	}
 };
 
+WebpackHelInstance.prototype = {
+
+	build: function (resolve) {
+		this.conf.watch = false;
+		webpack(this.conf, logger(this.conf, resolve));
+	},
+
+	watch: function (resolve) {
+		this.conf.watch = true;
+		this.conf.cache = true;
+		webpack(this.conf, logger(this.conf, resolve));
+	},
+
+	debug: function (resolve, cleanupRules) {
+		listMap(this.conf, resolve, cleanupRules)
+	}
+
+};
+
 module.exports = {
-
-	configure: function (conf) {
-
-		if (conf.context == null) {
-			conf.context = process.cwd();
-		}
-
-		if (conf.plugins == null) {
-			conf.plugins = [];
-		}
-
-		if (conf.module == null) {
-			conf.module = {};
-		}
-
-		if (conf.module.loaders == null) {
-			conf.module.loaders = [];
-		}
-
-		if (conf.resolve == null) {
-			conf.resolve = {};
-		}
-
-		if (conf.resolve.extensions == null) {
-			conf.resolve.extensions = [ '', '.js' ];
-		}
-
-		if (conf.output == null) {
-			conf.output = {
-				path: 'public/web',               // where to place files
-				publicPath: '/web/',              // url prefix when loading
-				filename: '[name].js',            // how to name entry points
-				chunkFilename: 'pagejs.[id].js'   // how to name chunks
-			};
-		}
-
-		if (conf.output.filename == null) {
-			conf.output.filename = '[name].js';
-		}
-
-		if (conf.output.chunkFilename == null) {
-			conf.output.chunkFilename = 'pagejs.[id].[chunkhash].js';
-		}
-
-		if (conf.output.sourceMapFilename == null) {
-			conf.output.sourceMapFilename = '[file].map';
-		}
-
-		if (conf.output.devtoolModuleFilenameTemplate == null) {
-			conf.output.devtoolModuleFilenameTemplate = "webpack://source.maps/[resource-path]";
-		}
-
-		if (conf.output.devtoolFallbackModuleFilenameTemplate == null) {
-			conf.output.devtoolFallbackModuleFilenameTemplate = "webpack://source.maps/[resource-path]?[hash]";
-		}
-
-		conf.module.loaders.push({
-			test: /\.json$/,
-			loader: 'json-loader'
-		});
-
-		// Dedupe is disabled due to causing apply bug in dynamic contexts
-		// feel free to add to your project if it doesn't cause issues
-
-//		conf.plugins.push(new plugin.Dedupe);
-
-		if (env == 'production') {
-			conf.devtool = 'source-map';
-
-			conf.plugins.push (
-				new plugin.Define({
-					'process.env': {
-						NODE_ENV: '"production"'
-					}
-				})
-			);
-
-			conf.plugins.push (
-				new plugin.UglifyJs({
-					sourceMap: true,
-					mangle: true,
-					compress: {
-						warnings: false
-					},
-					output: {
-						comments: false
-					}
-				})
-			);
-		}
-		else { // assume development
-			conf.devtool = 'eval';
-			conf.output.pathinfo = true;
-		}
-	},
-
-	reactify: function (conf) {
-		conf.module.loaders.push({
-			test: /\.jsx$/,
-			loader: 'jsx-loader'
-		});
-
-		conf.resolve.extensions.push('.jsx');
-	},
-
-	build: function (conf, resolve) {
-		conf.watch = false;
-		webpack(conf, logger(conf, resolve));
-	},
-
-	watch: function (conf, resolve) {
-		conf.watch = true;
-		conf.cache = true;
-		webpack(conf, logger(conf, resolve));
-	},
-
-	list: listmap
-}
+	instance: function (conf) {
+		return new WebpackHelInstance(conf);
+	}
+};
